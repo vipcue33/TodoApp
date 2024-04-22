@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToDo App</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>ToDo App</h1>
+        <hr>
+        <!-- Logout button (displayed when logged in) -->
+        {% if user.is_authenticated %}
+        <form action="{% url 'logout' %}" method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Logout</button>
+        </form>
+        <!-- If not logged in, show login button -->
+        {% else %}
+        <a href="{% url 'login' %}" class="btn btn-primary">Login</a>
+        {% endif %}
+        <!-- Success message -->
+        <div id="success-message" class="alert alert-success" style="display: none;">
+            Task added successfully!
+        </div>
+        <div id="todo-list" class="mb-3">
+            <!-- To-Do items will be displayed here -->
+        </div>
+        <form id="todo-form">
+            <div class="form-group">
+                <label for="title">Title:</label>
+                <input type="text" class="form-control" id="title" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Description:</label>
+                <textarea class="form-control" id="description"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="due-date">Due Date:</label>
+                <input type="date" class="form-control" id="due-date">
+            </div>
+            <button type="submit" class="btn btn-primary">Add Task</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('todo-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const title = document.getElementById('title').value;
+            const description = document.getElementById('description').value;
+            const dueDate = document.getElementById('due-date').value;
+
+            // Send AJAX request to add the task
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('description', description);
+            formData.append('due_date', dueDate);
+
+            fetch('add', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Clear the form
+                document.getElementById('title').value = '';
+                document.getElementById('description').value = '';
+                document.getElementById('due-date').value = '';
+
+                // Show success message
+                document.getElementById('success-message').style.display = 'block';
+
+                // Refresh the to-do list
+                fetchTasks();
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        function fetchTasks() {
+            fetch('add')
+            .then(response => response.json())
+            .then(data => {
+                const todoList = document.getElementById('todo-list');
+                todoList.innerHTML = '';
+
+                data.forEach(task => {
+                    const taskItem = document.createElement('div');
+                    taskItem.classList.add('card', 'mb-3');
+
+                    const taskContent = `
+                        <div class="card-body">
+                            <h5 class="card-title">${task.title}</h5>
+                            <p class="card-text">${task.description}</p>
+                            <p class="card-text"><small class="text-muted">Due: ${task.due_date}</small></p>
+                        </div>
+                    `;
+                    taskItem.innerHTML = taskContent;
+                    todoList.appendChild(taskItem);
+                });
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        // Fetch tasks when the page loads
+        window.onload = fetchTasks;
+    </script>
+</body>
+</html>
